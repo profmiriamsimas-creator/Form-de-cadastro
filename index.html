@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formulário de Cadastro</title>
+  <style>
+    body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; padding: 20px; }
+    .form-container { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
+    h2 { margin-bottom: 20px; color: #333; text-align: center; }
+    label { font-weight: bold; display: block; margin-top: 12px; color: #555; }
+    input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+    button { width: 100%; background-color: #25D366; color: white; border: none; padding: 12px; margin-top: 20px; font-size: 16px; font-weight: bold; border-radius: 5px; cursor: pointer; transition: background 0.3s; }
+    button:hover { background-color: #1ebc57; }
+    button:disabled { background-color: #cccccc; cursor: not-allowed; }
+    .status-msg { margin-top: 15px; text-align: center; font-weight: bold; font-size: 14px; }
+    .success { color: #2e7d32; }
+    .error { color: #c62828; }
+  </style>
+</head>
+<body>
+
+<div class="form-container">
+  <h2>Formulário de Cadastro</h2>
+  <form id="cadastroForm">
+    <label for="nome">Nome Completo:*</label>
+    <input type="text" id="nome" required placeholder="Digite seu nome">
+
+    <label for="email">E-mail:*</label>
+    <input type="email" id="email" required placeholder="Digite seu e-mail">
+
+    <label for="cidade">Cidade:*</label>
+    <input type="text" id="cidade" required placeholder="Digite sua cidade">
+
+    <label for="servico">Serviço Desejado:</label>
+    <select id="servico">
+      <option value="Consultoria">Consultoria</option>
+      <option value="Suporte Técnico">Suporte Técnico</option>
+      <option value="Orçamento">Orçamento</option>
+    </select>
+
+    <label for="mensagem">Observações:</label>
+    <textarea id="mensagem" rows="3" placeholder="Sua mensagem..."></textarea>
+
+    <button type="submit" id="btnEnviar">Enviar Cadastro e Abrir WhatsApp</button>
+    <div id="statusMsg" class="status-msg"></div>
+  </form>
+</div>
+
+<script>
+  // ==================== CONFIGURAÇÕES ====================
+  // 1. Cole aqui a URL do Web App gerada no Google Apps Script:
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzJi_7cP3MAF3PqionQg1Bc90cC6LS4_oNGnXfNwZFE_2pKwh67lQKw7zGbKruxYbz5/exec";
+
+  // 2. Insira o seu número do WhatsApp (com DDD e 55, sem espaços ou traços):
+  const NUMERO_WHATSAPP = "5518997065735"; 
+  // ========================================================
+
+  document.getElementById("cadastroForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const btn = document.getElementById("btnEnviar");
+    const statusMsg = document.getElementById("statusMsg");
+
+    const nome = document.getElementById("nome").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const cidade = document.getElementById("cidade").value.trim();
+    const servico = document.getElementById("servico").value;
+    const mensagem = document.getElementById("mensagem").value.trim();
+
+    if (!nome || !email || !cidade) {
+      alert("Por favor, preencha os campos obrigatórios.");
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = "Salvando dados...";
+    statusMsg.className = "status-msg";
+    statusMsg.innerText = "";
+
+    try {
+      // Envia os dados para a planilha do Google via Fetch API
+      const formData = new FormData();
+      formData.append("nome", nome);
+      formData.append("email", email);
+      formData.append("cidade", cidade);
+      formData.append("servico", servico);
+      formData.append("mensagem", mensagem);
+
+      await fetch(SCRIPT_URL, {
+        method: "POST",
+        body: formData,
+        mode: "no-cors"
+      });
+
+      statusMsg.className = "status-msg success";
+      statusMsg.innerText = "Dados salvos na planilha! Redirecionando para o WhatsApp...";
+
+      // Monta a mensagem do WhatsApp
+      const textoWhatsApp = `*Novo Cadastro Recebido!*%0A%0A` +
+        `*Nome:* ${encodeURIComponent(nome)}%0A` +
+        `*E-mail:* ${encodeURIComponent(email)}%0A` +
+        `*Cidade:* ${encodeURIComponent(cidade)}%0A` +
+        `*Serviço:* ${encodeURIComponent(servico)}%0A` +
+        `*Observações:* ${encodeURIComponent(mensagem)}`;
+
+      const urlWhatsApp = `https://wa.me/${NUMERO_WHATSAPP}?text=${textoWhatsApp}`;
+
+      setTimeout(() => {
+        window.open(urlWhatsApp, "_blank");
+        btn.disabled = false;
+        btn.innerText = "Enviar Cadastro e Abrir WhatsApp";
+        document.getElementById("cadastroForm").reset();
+      }, 1200);
+
+    } catch (error) {
+      console.error("Erro:", error);
+      statusMsg.className = "status-msg error";
+      statusMsg.innerText = "Ocorreu um erro ao salvar os dados. Tente novamente.";
+      btn.disabled = false;
+      btn.innerText = "Enviar Cadastro e Abrir WhatsApp";
+    }
+  });
+</script>
+
+</body>
+</html>
